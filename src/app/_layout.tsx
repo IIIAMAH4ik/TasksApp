@@ -1,15 +1,46 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import LoginScreen from '@/screens/LoginScreen';
+import IndexScreen from './index';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+function AppContent() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator />
+        <Text style={styles.loadingText}>Проверяю вход...</Text>
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  return <IndexScreen />;
+}
+
+export default function RootLayout() {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: '#0f0f11',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    color: '#aaa6a0',
+    fontSize: 14,
+  },
+});
