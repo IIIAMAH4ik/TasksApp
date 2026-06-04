@@ -32,12 +32,93 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
+  foodHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: 3,
+    marginBottom: 4,
+  },
+  foodHandle: {
+    width: 32,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#f2cc8f',
+    opacity: 0.55,
+  },
+  foodHandleActive: {
+    backgroundColor: '#f2cc8f',
+    opacity: 1,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 12,
     marginBottom: 18,
+  },
+  progressHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: 3,
+    marginBottom: 4,
+  },
+  progressHandle: {
+    width: 32,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#6dbf8e',
+    opacity: 0.55,
+  },
+  categoryFilterBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 14,
+  },
+  categoryScrollHint: {
+    width: 18,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryScrollHintText: {
+    color: '#6d6963',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
+  categoryPanelButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    borderColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#18181c',
+  },
+  categoryPanelButtonActive: {
+    backgroundColor: '#b8a98a',
+    borderColor: '#b8a98a',
+  },
+  categoryPanelButtonText: {
+    color: '#b8a98a',
+    fontSize: 24,
+    fontWeight: '700',
+    lineHeight: 26,
+  },
+  categoryPanelButtonTextActive: {
+    color: '#0f0f11',
+  },
+  categoryPanel: {
+    backgroundColor: '#18181c',
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 16,
+  },
+  progressHandleActive: {
+    backgroundColor: '#6dbf8e',
+    opacity: 1,
   },
   title: {
     color: '#f6f2ec',
@@ -50,7 +131,7 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterScroll: {
-    marginBottom: 14,
+    flex: 1,
   },
   filterRow: {
     gap: 8,

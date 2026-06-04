@@ -9,9 +9,10 @@ import {
 } from 'react-native';
 
 import FoodCard from '@/components/food/FoodCard';
+import SettingsScreen from '@/components/settings/SettingsScreen';
 import AddTaskCard from '@/components/tasks/AddTaskCard';
-import ProgressCard from '@/components/tasks/ProgressCard';
 import TaskCard from '@/components/tasks/TaskCard';
+import TaskList from '@/components/tasks/TaskList';
 import { defaultCategories } from '@/constants/categories';
 import { useAuth } from '@/context/AuthContext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
@@ -33,9 +34,8 @@ export default function IndexScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCategoryKey, setActiveCategoryKey] = useState('all');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  const [isNutritionOpen, setIsNutritionOpen] = useState(false);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -54,7 +54,6 @@ export default function IndexScreen() {
   const [dailyData, setDailyData] = useState<DailyData | null>(null);
 
   const [isLoadingData, setIsLoadingData] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const progress = useMemo(() => {
@@ -192,14 +191,11 @@ export default function IndexScreen() {
     setDailyData(nextDailyData);
 
     try {
-      setIsSaving(true);
       setErrorMessage('');
       await saveDailyData(nextDailyData);
     } catch (error) {
       console.log('save daily data error:', error);
       setErrorMessage('Ошибка сохранения данных.');
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -484,59 +480,6 @@ export default function IndexScreen() {
     return categories.find((category) => category.key === categoryKey)?.name ?? categoryKey;
   }
 
-  function calculateMacrosByCalories(calories: number) {
-    return {
-      proteinGoal: Math.round((calories * 0.3) / 4),
-      fatGoal: Math.round((calories * 0.3) / 9),
-      carbsGoal: Math.round((calories * 0.4) / 4),
-    };
-  }
-
-  async function updateDailyMetaValue(
-    field: 'caloriesGoal' | 'proteinGoal' | 'fatGoal' | 'carbsGoal',
-    value: string
-  ) {
-    if (!dailyData) {
-      return;
-    }
-
-    const numericValue = value.trim() === '' ? 0 : Number(value);
-
-    if (Number.isNaN(numericValue)) {
-      setErrorMessage('Значение КБЖУ должно быть числом.');
-      return;
-    }
-
-    const nextMeta = {
-      ...dailyData.meta,
-      [field]: numericValue,
-    };
-
-    if (field === 'caloriesGoal') {
-      const macros = calculateMacrosByCalories(numericValue);
-
-      nextMeta.proteinGoal = macros.proteinGoal;
-      nextMeta.fatGoal = macros.fatGoal;
-      nextMeta.carbsGoal = macros.carbsGoal;
-    }
-
-    const nextDailyData: DailyData = {
-      ...dailyData,
-      meta: nextMeta,
-      updated_at: new Date().toISOString(),
-    };
-
-    setDailyData(nextDailyData);
-
-    try {
-      setErrorMessage('');
-      await saveDailyData(nextDailyData);
-    } catch (error) {
-      console.log('save daily meta error:', error);
-      setErrorMessage('Ошибка сохранения КБЖУ.');
-    }
-  }
-
   async function addCategory() {
     if (!user) {
       return;
@@ -655,25 +598,117 @@ export default function IndexScreen() {
 
   if (isSettingsOpen) {
     return (
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <View style={styles.settingsHeader}>
-          <View>
-            <Text style={styles.title}>Настройки</Text>
-            <Text style={styles.subtitle}>Аккаунт, темы и внешний вид</Text>
-          </View>
+      <SettingsScreen
+        userEmail={user?.email}
+        progress={progress}
+        onClose={() => setIsSettingsOpen(false)}
+        onSignOut={signOut}
+      />
+    );
+  }
 
-          <Pressable style={styles.settingsBackButton} onPress={() => setIsSettingsOpen(false)}>
-            <Text style={styles.settingsBackText}>Назад</Text>
+  return (
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>My Tasks</Text>
+          <Text style={styles.subtitle}>
+            {dailyData?.day_key ?? getDayKey(selectedDate)}
+          </Text>
+        </View>
+
+        <Pressable style={styles.settingsButton} onPress={() => setIsSettingsOpen(true)}>
+          <Text style={styles.settingsButtonIcon}>⚙</Text>
+          <Text style={styles.settingsButtonText}>Настройки</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.dateNav}>
+        <Pressable style={styles.dateButton} onPress={() => changeDay(-1)}>
+          <Text style={styles.dateButtonText}>←</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.todayButton, isSameDay(selectedDate, new Date()) && styles.todayButtonActive]}
+          onPress={goToday}
+        >
+          <Text style={styles.todayButtonText}>{formatDateTitle(selectedDate)}</Text>
+        </Pressable>
+
+        <Pressable style={styles.dateButton} onPress={() => changeDay(1)}>
+          <Text style={styles.dateButtonText}>→</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.categoryFilterBlock}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filterRow}
+        >
+          <Pressable
+            style={[
+              styles.filterChip,
+              activeCategoryKey === 'all' && styles.filterChipActive,
+            ]}
+            onPress={() => setActiveCategoryKey('all')}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                activeCategoryKey === 'all' && styles.filterChipTextActive,
+              ]}
+            >
+              Все
+            </Text>
           </Pressable>
+
+          {categories.map((category) => (
+            <Pressable
+              key={category.key}
+              style={[
+                styles.filterChip,
+                activeCategoryKey === category.key && styles.filterChipActive,
+              ]}
+              onPress={() => setActiveCategoryKey(category.key)}
+            >
+              <Text
+                style={[
+                  styles.filterChipText,
+                  activeCategoryKey === category.key && styles.filterChipTextActive,
+                ]}
+              >
+                {category.name}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        <View style={styles.categoryScrollHint}>
+          <Text style={styles.categoryScrollHintText}>›</Text>
         </View>
 
-        <View style={styles.settingsCard}>
-          <Text style={styles.settingsSectionTitle}>Аккаунт</Text>
-          <Text style={styles.accountLabel}>Текущий аккаунт</Text>
-          <Text style={styles.accountEmail}>{user?.email}</Text>
-        </View>
+        <Pressable
+          style={[
+            styles.categoryPanelButton,
+            isCategoryPanelOpen && styles.categoryPanelButtonActive,
+          ]}
+          onPress={() => setIsCategoryPanelOpen((current) => !current)}
+        >
+          <Text
+            style={[
+              styles.categoryPanelButtonText,
+              isCategoryPanelOpen && styles.categoryPanelButtonTextActive,
+            ]}
+          >
+            {isCategoryPanelOpen ? '−' : '+'}
+          </Text>
+        </Pressable>
+      </View>
 
-        <View style={styles.settingsCard}>
+      {isCategoryPanelOpen && (
+        <View style={styles.categoryPanel}>
           <Text style={styles.settingsSectionTitle}>Темы</Text>
 
           <View style={styles.categoryAddRow}>
@@ -714,108 +749,7 @@ export default function IndexScreen() {
             ))}
           </View>
         </View>
-
-        <View style={styles.settingsCard}>
-          <Text style={styles.settingsSectionTitle}>Внешний вид</Text>
-
-          <View style={styles.themeRow}>
-            <Pressable style={[styles.themeButton, styles.themeButtonActive]}>
-              <Text style={[styles.themeButtonText, styles.themeButtonTextActive]}>Тёмная</Text>
-            </Pressable>
-
-            <Pressable style={styles.themeButton}>
-              <Text style={styles.themeButtonText}>Светлая</Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.settingsHint}>
-            Смену темы подключим позже. Сейчас приложение остаётся в тёмном оформлении.
-          </Text>
-        </View>
-
-        <Pressable style={styles.signOutButton} onPress={signOut}>
-          <Text style={styles.signOutButtonText}>Выйти из аккаунта</Text>
-        </Pressable>
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>My Tasks</Text>
-          <Text style={styles.subtitle}>
-            {dailyData?.day_key ?? getDayKey(selectedDate)}
-          </Text>
-        </View>
-
-        <Pressable style={styles.settingsButton} onPress={() => setIsSettingsOpen(true)}>
-          <Text style={styles.settingsButtonIcon}>⚙</Text>
-          <Text style={styles.settingsButtonText}>Настройки</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.dateNav}>
-        <Pressable style={styles.dateButton} onPress={() => changeDay(-1)}>
-          <Text style={styles.dateButtonText}>←</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.todayButton, isSameDay(selectedDate, new Date()) && styles.todayButtonActive]}
-          onPress={goToday}
-        >
-          <Text style={styles.todayButtonText}>{formatDateTitle(selectedDate)}</Text>
-        </Pressable>
-
-        <Pressable style={styles.dateButton} onPress={() => changeDay(1)}>
-          <Text style={styles.dateButtonText}>→</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterRow}
-      >
-        <Pressable
-          style={[
-            styles.filterChip,
-            activeCategoryKey === 'all' && styles.filterChipActive,
-          ]}
-          onPress={() => setActiveCategoryKey('all')}
-        >
-          <Text
-            style={[
-              styles.filterChipText,
-              activeCategoryKey === 'all' && styles.filterChipTextActive,
-            ]}
-          >
-            Все
-          </Text>
-        </Pressable>
-
-        {categories.map((category) => (
-          <Pressable
-            key={category.key}
-            style={[
-              styles.filterChip,
-              activeCategoryKey === category.key && styles.filterChipActive,
-            ]}
-            onPress={() => setActiveCategoryKey(category.key)}
-          >
-            <Text
-              style={[
-                styles.filterChipText,
-                activeCategoryKey === category.key && styles.filterChipTextActive,
-              ]}
-            >
-              {category.name}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+      )}
 
       {activeCategoryKey === 'food' && (
         <FoodCard
@@ -834,8 +768,6 @@ export default function IndexScreen() {
           onAddFoodTask={addFoodTask}
         />
       )}
-      
-      <ProgressCard progress={progress} />
 
       {!!errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
@@ -858,44 +790,12 @@ export default function IndexScreen() {
         onAddTask={addTask}
       />
 
-      {activeCategoryKey === 'all' ? (
-        <View style={styles.groupList}>
-          {groupedTasks.map((group) => (
-            <View key={group.category.key} style={styles.groupBlock}>
-              <View style={styles.groupHeader}>
-                <View
-                  style={[
-                    styles.groupDot,
-                    { backgroundColor: group.category.color },
-                  ]}
-                />
-                <Text style={styles.groupTitle}>{group.category.name}</Text>
-                <Text style={styles.groupCount}>{group.tasks.length}</Text>
-              </View>
-
-              <View style={styles.tasksCard}>
-                {group.tasks.map(renderTask)}
-              </View>
-            </View>
-          ))}
-
-          {groupedTasks.length === 0 && (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>На этот день задач пока нет.</Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.tasksCard}>
-          {visibleTasks.map(renderTask)}
-
-          {visibleTasks.length === 0 && (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>В этой категории пока нет задач.</Text>
-            </View>
-          )}
-        </View>
-      )}
+      <TaskList
+        activeCategoryKey={activeCategoryKey}
+        groupedTasks={groupedTasks}
+        visibleTasks={visibleTasks}
+        renderTask={renderTask}
+      />
     </ScrollView>
   );
 }

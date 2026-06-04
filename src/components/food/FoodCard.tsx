@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { styles } from '@/styles/index.styles';
@@ -47,6 +48,13 @@ export default function FoodCard({
   setFoodCarbs,
   onAddFoodTask,
 }: FoodCardProps) {
+  const [isFoodFormOpen, setIsFoodFormOpen] = useState(false);
+
+  function handleAddFoodTask() {
+    onAddFoodTask();
+    setIsFoodFormOpen(false);
+  }
+
   return (
     <View style={styles.foodCard}>
       <Text style={styles.foodTitle}>Еда / КБЖУ</Text>
@@ -69,55 +77,66 @@ export default function FoodCard({
         </Text>
       </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Название еды..."
-        placeholderTextColor="#6d6963"
-        value={foodTitle}
-        onChangeText={setFoodTitle}
-      />
-
-      <View style={styles.foodGrid}>
-        <TextInput
-          style={styles.foodInput}
-          placeholder="ккал"
-          placeholderTextColor="#6d6963"
-          value={foodCalories}
-          onChangeText={setFoodCalories}
-          keyboardType="numeric"
-        />
-
-        <TextInput
-          style={styles.foodInput}
-          placeholder="белки"
-          placeholderTextColor="#6d6963"
-          value={foodProtein}
-          onChangeText={setFoodProtein}
-          keyboardType="numeric"
-        />
-
-        <TextInput
-          style={styles.foodInput}
-          placeholder="жиры"
-          placeholderTextColor="#6d6963"
-          value={foodFat}
-          onChangeText={setFoodFat}
-          keyboardType="numeric"
-        />
-
-        <TextInput
-          style={styles.foodInput}
-          placeholder="углеводы"
-          placeholderTextColor="#6d6963"
-          value={foodCarbs}
-          onChangeText={setFoodCarbs}
-          keyboardType="numeric"
-        />
-      </View>
-
-      <Pressable style={styles.foodAddButton} onPress={onAddFoodTask}>
-        <Text style={styles.foodAddButtonText}>Добавить еду</Text>
+      <Pressable
+        style={styles.foodHandleWrap}
+        onPress={() => setIsFoodFormOpen((current) => !current)}
+      >
+        <View style={[styles.foodHandle, isFoodFormOpen && styles.foodHandleActive]} />
       </Pressable>
+
+      {isFoodFormOpen && (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Название еды..."
+            placeholderTextColor="#6d6963"
+            value={foodTitle}
+            onChangeText={setFoodTitle}
+          />
+
+          <View style={styles.foodGrid}>
+            <TextInput
+              style={styles.foodInput}
+              placeholder="ккал"
+              placeholderTextColor="#6d6963"
+              value={foodCalories}
+              onChangeText={setFoodCalories}
+              keyboardType="numeric"
+            />
+
+            <TextInput
+              style={styles.foodInput}
+              placeholder="белки"
+              placeholderTextColor="#6d6963"
+              value={foodProtein}
+              onChangeText={setFoodProtein}
+              keyboardType="numeric"
+            />
+
+            <TextInput
+              style={styles.foodInput}
+              placeholder="жиры"
+              placeholderTextColor="#6d6963"
+              value={foodFat}
+              onChangeText={setFoodFat}
+              keyboardType="numeric"
+            />
+
+            <TextInput
+              style={styles.foodInput}
+              placeholder="углеводы"
+              placeholderTextColor="#6d6963"
+              value={foodCarbs}
+              onChangeText={setFoodCarbs}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <Pressable style={styles.foodAddButton} onPress={handleAddFoodTask}>
+            <Text style={styles.foodAddButtonText}>Добавить еду</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }

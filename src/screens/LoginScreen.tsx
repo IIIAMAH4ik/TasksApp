@@ -19,65 +19,107 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
 
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'info' | 'success' | 'error'>('info');
   const [isLoading, setIsLoading] = useState(false);
+
+  function showMessage(
+    text: string,
+    type: 'info' | 'success' | 'error' = 'info'
+  ) {
+    setMessage(text);
+    setMessageType(type);
+  }
 
   async function handleSignIn() {
     if (!email.trim() || !password) {
-     setMessage('Укажи email и пароль.');
+     showMessage('Укажи email и пароль.', 'error');
      return;
      }
 
     try {
        setIsLoading(true);
-     setMessage('Выполняю вход...');
+     showMessage('Выполняю вход...', 'info');
 
       const result = await signIn(email.trim(), password);
 
      console.log('login screen sign in result:', result);
 
      if (result.error) {
-       setMessage(result.error);
+       showMessage(result.error, 'error');
        return;
         }
 
-       setMessage('Вход выполнен.');
+       showMessage('Вход выполнен.', 'success');
     } catch (error) {
       console.log('login screen sign in error:', error);
-      setMessage('Ошибка входа. Подробности смотри в терминале Expo.');
+      showMessage('Ошибка входа. Попробуйте ещё раз.', 'error');
     } finally {
       setIsLoading(false);
     }
   }
 
+  function getAuthErrorMessage(message: string) {
+    const normalizedMessage = message.toLowerCase();
+
+    if (normalizedMessage.includes('email rate limit')) {
+      return 'Слишком много писем отправлено на этот email. Подождите несколько минут и попробуйте снова.';
+    }
+
+    if (normalizedMessage.includes('invalid login credentials')) {
+      return 'Неверный email или пароль.';
+    }
+
+    if (normalizedMessage.includes('email not confirmed')) {
+      return 'Email ещё не подтверждён. Проверьте почту или попробуйте позже.';
+    }
+
+    if (normalizedMessage.includes('user already registered')) {
+      return 'Пользователь с таким email уже зарегистрирован. Попробуйте войти.';
+    }
+
+    if (normalizedMessage.includes('password')) {
+      return 'Пароль должен быть не короче 6 символов.';
+    }
+
+    if (normalizedMessage.includes('email')) {
+      return 'Проверьте правильность email.';
+    }
+
+    return 'Ошибка авторизации. Попробуйте ещё раз.';
+  }
+
   async function handleSignUp() {
      if (!email.trim() || !password) {
-     setMessage('Укажи email и пароль.');
+     showMessage('Укажи email и пароль.', 'error');
      return;
     }
 
      if (password.length < 6) {
-      setMessage('Пароль должен быть минимум 6 символов.');
+      showMessage('Пароль должен быть минимум 6 символов.', 'error');
         return;
     }
 
     
      try {
       setIsLoading(true);
-     setMessage('Создаю аккаунт...');
+     showMessage('Создаю аккаунт...', 'info');
 
      const result = await signUp(email.trim(), password);
 
      console.log('login screen sign up result:', result);
 
       if (result.error) {
-         setMessage(result.error);
+         showMessage(result.error, 'error');
        return;
       }
 
-      setMessage('Аккаунт создан. Подтверди email по ссылке из письма, затем вернись сюда и нажми "Войти".');
+      showMessage(
+        'Аккаунт создан. Подтверди email по ссылке из письма, затем вернись сюда и нажми "Войти".',
+        'success'
+      );
     } catch (error) {
       console.log('login screen sign up error:', error);
-      setMessage('Ошибка регистрации. Подробности смотри в терминале Expo.');
+      showMessage('Ошибка регистрации. Попробуйте ещё раз.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +176,18 @@ export default function LoginScreen() {
 
         <View style={styles.messageBox}>
           {isLoading && <ActivityIndicator />}
-          {!!message && <Text style={styles.message}>{message}</Text>}
+          {!!message && (
+            <Text
+              style={[
+                styles.message,
+                messageType === 'error' && styles.errorMessage,
+                messageType === 'success' && styles.successMessage,
+                messageType === 'info' && styles.infoMessage,
+              ]}
+            >
+              {message}
+            </Text>
+          )}
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -154,6 +207,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 20,
     padding: 22,
+  },
+  errorMessage: {
+    color: '#e06e6e',
+  },
+  successMessage: {
+    color: '#6dbf8e',
+  },
+  infoMessage: {
+    color: '#aaa6a0',
   },
   title: {
     color: '#f6f2ec',

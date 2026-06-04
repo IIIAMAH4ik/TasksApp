@@ -18,6 +18,40 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+function getAuthErrorMessage(message: string) {
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedMessage.includes('email rate limit')) {
+    return 'Слишком много писем отправлено на этот email. Подождите несколько минут и попробуйте снова.';
+  }
+
+  if (normalizedMessage.includes('invalid login credentials')) {
+    return 'Неверный email или пароль.';
+  }
+
+  if (normalizedMessage.includes('email not confirmed')) {
+    return 'Email ещё не подтверждён. Проверьте почту и перейдите по ссылке подтверждения.';
+  }
+
+  if (normalizedMessage.includes('user already registered')) {
+    return 'Пользователь с таким email уже зарегистрирован. Попробуйте войти.';
+  }
+
+  if (normalizedMessage.includes('signup disabled')) {
+    return 'Регистрация сейчас отключена.';
+  }
+
+  if (normalizedMessage.includes('password')) {
+    return 'Пароль должен быть не короче 6 символов.';
+  }
+
+  if (normalizedMessage.includes('email')) {
+    return 'Проверьте правильность email.';
+  }
+
+  return 'Ошибка авторизации. Попробуйте ещё раз.';
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,7 +81,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: getAuthErrorMessage(error.message) };
     }
 
     return {};
@@ -60,7 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     if (error) {
-      return { error: error.message };
+      return { error: getAuthErrorMessage(error.message) };
     }
 
     return {};
