@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 
+import ProgressRing from '@/components/progressring';
 import { defaultCategories } from '@/constants/categories';
 import { useAuth } from '@/context/AuthContext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
@@ -27,6 +28,7 @@ export default function IndexScreen() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [isNutritionOpen, setIsNutritionOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCategoryKey, setNewTaskCategoryKey] = useState('work');
@@ -37,6 +39,7 @@ export default function IndexScreen() {
   const [foodProtein, setFoodProtein] = useState('');
   const [foodFat, setFoodFat] = useState('');
   const [foodCarbs, setFoodCarbs] = useState('');
+  
 
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [dailyData, setDailyData] = useState<DailyData | null>(null);
@@ -320,6 +323,7 @@ export default function IndexScreen() {
     setNewTaskExpectedCount('');
     setNewTaskExpectedTime('');
     setErrorMessage('');
+    setIsAddTaskOpen(false);
   }
 
   function addFoodTask() {
@@ -851,7 +855,16 @@ export default function IndexScreen() {
       )}
 
       <View style={styles.progressCard}>
-        <Text style={styles.progressPercent}>{progress.percent}%</Text>
+        <View style={styles.progressTopRow}>
+          <View style={styles.progressMain}>
+            <Text style={styles.progressPercent}>{progress.percent}%</Text>
+            <Text style={styles.progressHint}>прогресс за день</Text>
+          </View>
+
+          <View style={styles.progressChartWrap}>
+            <ProgressRing progress={progress.percent} />
+          </View>
+        </View>
 
         <View style={styles.progressStats}>
           <View>
@@ -876,61 +889,72 @@ export default function IndexScreen() {
       <Text style={styles.sectionTitle}>Задачи</Text>
 
       <View style={styles.addCard}>
-        <TextInput
-          style={styles.input}
-          placeholder="Новая задача..."
-          placeholderTextColor="#6d6963"
-          value={newTaskTitle}
-          onChangeText={setNewTaskTitle}
-        />
+        <Pressable
+          style={styles.addCardHandleWrap}
+          onPress={() => setIsAddTaskOpen((current) => !current)}
+        >
+          <View style={[styles.addCardHandle, isAddTaskOpen && styles.addCardHandleActive]} />
+        </Pressable>
 
-        <View style={styles.categoryRow}>
-          {categories
-            .filter((category) => category.key !== 'food')
-            .map((category) => (
-            <Pressable
-              key={category.key}
-              style={[
-                styles.categoryChip,
-                newTaskCategoryKey === category.key && styles.categoryChipActive,
-              ]}
-              onPress={() => setNewTaskCategoryKey(category.key)}
-            >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  newTaskCategoryKey === category.key && styles.categoryChipTextActive,
-                ]}
-              >
-                {category.name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+        {isAddTaskOpen && (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Новая задача..."
+              placeholderTextColor="#6d6963"
+              value={newTaskTitle}
+              onChangeText={setNewTaskTitle}
+            />
 
-        <View style={styles.addMetaRow}>
-          <TextInput
-            style={[styles.input, styles.metaInput]}
-            placeholder="кол-во"
-            placeholderTextColor="#6d6963"
-            value={newTaskExpectedCount}
-            onChangeText={setNewTaskExpectedCount}
-            keyboardType="numeric"
-          />
+            <View style={styles.categoryRow}>
+              {categories
+                .filter((category) => category.key !== 'food')
+                .map((category) => (
+                  <Pressable
+                    key={category.key}
+                    style={[
+                      styles.categoryChip,
+                      newTaskCategoryKey === category.key && styles.categoryChipActive,
+                    ]}
+                    onPress={() => setNewTaskCategoryKey(category.key)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        newTaskCategoryKey === category.key && styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </Pressable>
+                ))}
+            </View>
 
-          <TextInput
-            style={[styles.input, styles.metaInput]}
-            placeholder="мин"
-            placeholderTextColor="#6d6963"
-            value={newTaskExpectedTime}
-            onChangeText={setNewTaskExpectedTime}
-            keyboardType="numeric"
-          />
+            <View style={styles.addMetaRow}>
+              <TextInput
+                style={[styles.input, styles.metaInput]}
+                placeholder="кол-во"
+                placeholderTextColor="#6d6963"
+                value={newTaskExpectedCount}
+                onChangeText={setNewTaskExpectedCount}
+                keyboardType="numeric"
+              />
 
-          <Pressable style={styles.addButton} onPress={addTask}>
-            <Text style={styles.addButtonText}>+</Text>
-          </Pressable>
-        </View>
+              <TextInput
+                style={[styles.input, styles.metaInput]}
+                placeholder="мин"
+                placeholderTextColor="#6d6963"
+                value={newTaskExpectedTime}
+                onChangeText={setNewTaskExpectedTime}
+                keyboardType="numeric"
+              />
+
+              <Pressable style={styles.addButton} onPress={addTask}>
+                <Text style={styles.addButtonText}>+</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </View>
 
       {activeCategoryKey === 'all' ? (
@@ -971,10 +995,6 @@ export default function IndexScreen() {
           )}
         </View>
       )}
-
-      <Pressable style={styles.reloadButton} onPress={loadInitialData}>
-        <Text style={styles.reloadText}>Обновить</Text>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -1362,6 +1382,27 @@ const styles = StyleSheet.create({
     color: '#aaa6a0',
     fontSize: 12,
   },
+  progressTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  progressMain: {
+    flex: 1,
+  },
+  progressHint: {
+    color: '#6d6963',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
+  progressChartWrap: {
+    width: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   managerDeleteButton: {
     width: 20,
     height: 20,
@@ -1392,10 +1433,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   dateNav: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 8,
-  marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
   },
   dateButton: {
     width: 44,
@@ -1525,6 +1566,22 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 14,
   },
+  addCardHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: 3,
+    marginBottom: 4,
+  },
+  addCardHandle: {
+    width: 32,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: '#b8a98a',
+    opacity: 0.55,
+  },
+  addCardHandleActive: {
+    backgroundColor: '#b8a98a',
+    opacity: 1,
+  },
   input: {
     backgroundColor: '#1f1f25',
     borderColor: 'rgba(255,255,255,0.09)',
@@ -1636,18 +1693,6 @@ const styles = StyleSheet.create({
   taskSub: {
     color: '#6d6963',
     fontSize: 12,
-  },
-  reloadButton: {
-    backgroundColor: '#b8a98a',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  reloadText: {
-    color: '#0f0f11',
-    fontSize: 16,
-    fontWeight: '600',
   },
   taskMain: {
     flex: 1,
