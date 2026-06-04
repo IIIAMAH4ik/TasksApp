@@ -8,7 +8,10 @@ import {
   View,
 } from 'react-native';
 
+import FoodCard from '@/components/food/FoodCard';
+import AddTaskCard from '@/components/tasks/AddTaskCard';
 import ProgressCard from '@/components/tasks/ProgressCard';
+import TaskCard from '@/components/tasks/TaskCard';
 import { defaultCategories } from '@/constants/categories';
 import { useAuth } from '@/context/AuthContext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
@@ -627,92 +630,17 @@ export default function IndexScreen() {
   }
 
   function renderTask(task: Task) {
-    const done = getTaskIsDone(task);
-
     return (
-      <View
+      <TaskCard
         key={task.id}
-        style={[styles.taskItem, done && styles.taskItemDone]}
-      >
-        <Pressable
-          style={styles.taskMain}
-          onPress={() => toggleTask(task.id)}
-        >
-          <View style={[styles.checkbox, done && styles.checkboxDone]}>
-            {done && <Text style={styles.checkboxText}>✓</Text>}
-          </View>
-
-          <View style={styles.taskBody}>
-            <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>
-              {task.title}
-            </Text>
-
-            <Text style={styles.taskMeta}>
-              {getCategoryName(task.categoryKey)}
-            </Text>
-
-            {(task.expectedCount || task.expectedTime) && (
-              <Text style={styles.taskSub}>
-                {task.expectedCount ? `План: ${task.expectedCount}` : ''}
-                {task.expectedCount && task.expectedTime ? ' · ' : ''}
-                {task.expectedTime ? `Время: ${task.expectedTime} мин` : ''}
-              </Text>
-            )}
-
-            {(task.expectedCount || task.expectedTime) && (
-              <View style={styles.actualRow}>
-                {task.expectedCount ? (
-                  <TextInput
-                    style={styles.actualInput}
-                    placeholder="факт"
-                    placeholderTextColor="#6d6963"
-                    value={task.actualCount === undefined ? '' : String(task.actualCount)}
-                    onChangeText={(value) => updateTaskActualValue(task.id, 'actualCount', value)}
-                    keyboardType="numeric"
-                  />
-                ) : null}
-
-                {task.expectedTime ? (
-                  <TextInput
-                    style={styles.actualInput}
-                    placeholder="мин"
-                    placeholderTextColor="#6d6963"
-                    value={task.actualTime === undefined ? '' : String(task.actualTime)}
-                    onChangeText={(value) => updateTaskActualValue(task.id, 'actualTime', value)}
-                    keyboardType="numeric"
-                  />
-                ) : null}
-              </View>
-            )}
-
-            {task.nutrition && (
-              <Text style={styles.taskSub}>
-                {task.nutrition.calories ?? 0} ккал · Б {task.nutrition.protein ?? 0} · Ж {task.nutrition.fat ?? 0} · У {task.nutrition.carbs ?? 0}
-              </Text>
-            )}
-          </View>
-        </Pressable>
-
-        {!isAutoTask(task) && (
-          <View style={styles.taskActions}>
-            {task.isGlobal && (
-              <Pressable
-                style={styles.taskActionButton}
-                onPress={() => disableGlobalTask(task.id)}
-              >
-                <Text style={styles.globalTaskActiveIcon}>★</Text>
-              </Pressable>
-            )}
-
-            <Pressable
-              style={styles.taskActionButton}
-              onPress={() => deleteTask(task.id)}
-            >
-              <Text style={styles.deleteButtonText}>×</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
+        task={task}
+        categoryName={getCategoryName(task.categoryKey)}
+        isAutoTask={isAutoTask(task)}
+        onToggle={toggleTask}
+        onDelete={deleteTask}
+        onDisableGlobal={disableGlobalTask}
+        onUpdateActualValue={updateTaskActualValue}
+      />
     );
   }
   
@@ -890,169 +818,45 @@ export default function IndexScreen() {
       </ScrollView>
 
       {activeCategoryKey === 'food' && (
-        <View style={styles.foodCard}>
-          <Text style={styles.foodTitle}>Еда / КБЖУ</Text>
-
-          <View style={styles.foodSummary}>
-            <Text style={styles.foodSummaryText}>
-              Потреблено: {consumedNutrition.calories} / {dailyData?.meta.caloriesGoal ?? 0} ккал
-            </Text>
-            <Text style={styles.foodSummaryText}>
-              Б: {consumedNutrition.protein} / {dailyData?.meta.proteinGoal ?? 0}
-            </Text>
-            <Text style={styles.foodSummaryText}>
-              Ж: {consumedNutrition.fat} / {dailyData?.meta.fatGoal ?? 0}
-            </Text>
-            <Text style={styles.foodSummaryText}>
-              У: {consumedNutrition.carbs} / {dailyData?.meta.carbsGoal ?? 0}
-            </Text>
-          </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Название еды..."
-            placeholderTextColor="#6d6963"
-            value={foodTitle}
-            onChangeText={setFoodTitle}
-          />
-
-          <View style={styles.foodGrid}>
-            <TextInput
-              style={styles.foodInput}
-              placeholder="ккал"
-              placeholderTextColor="#6d6963"
-              value={foodCalories}
-              onChangeText={setFoodCalories}
-              keyboardType="numeric"
-            />
-
-            <TextInput
-              style={styles.foodInput}
-              placeholder="белки"
-              placeholderTextColor="#6d6963"
-              value={foodProtein}
-              onChangeText={setFoodProtein}
-              keyboardType="numeric"
-            />
-
-            <TextInput
-              style={styles.foodInput}
-              placeholder="жиры"
-              placeholderTextColor="#6d6963"
-              value={foodFat}
-              onChangeText={setFoodFat}
-              keyboardType="numeric"
-            />
-
-            <TextInput
-              style={styles.foodInput}
-              placeholder="углеводы"
-              placeholderTextColor="#6d6963"
-              value={foodCarbs}
-              onChangeText={setFoodCarbs}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <Pressable style={styles.foodAddButton} onPress={addFoodTask}>
-            <Text style={styles.foodAddButtonText}>Добавить еду</Text>
-          </Pressable>
-        </View>
+        <FoodCard
+          dailyData={dailyData}
+          consumedNutrition={consumedNutrition}
+          foodTitle={foodTitle}
+          setFoodTitle={setFoodTitle}
+          foodCalories={foodCalories}
+          setFoodCalories={setFoodCalories}
+          foodProtein={foodProtein}
+          setFoodProtein={setFoodProtein}
+          foodFat={foodFat}
+          setFoodFat={setFoodFat}
+          foodCarbs={foodCarbs}
+          setFoodCarbs={setFoodCarbs}
+          onAddFoodTask={addFoodTask}
+        />
       )}
-
+      
       <ProgressCard progress={progress} />
 
       {!!errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
 
       <Text style={styles.sectionTitle}>Задачи</Text>
 
-      <View style={styles.addCard}>
-        <Pressable
-          style={styles.addCardHandleWrap}
-          onPress={() => setIsAddTaskOpen((current) => !current)}
-        >
-          <View style={[styles.addCardHandle, isAddTaskOpen && styles.addCardHandleActive]} />
-        </Pressable>
-
-        {isAddTaskOpen && (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Новая задача..."
-              placeholderTextColor="#6d6963"
-              value={newTaskTitle}
-              onChangeText={setNewTaskTitle}
-            />
-
-            <View style={styles.categorySelectRow}>
-              <View style={styles.categoryRow}>
-                {categories
-                  .filter((category) => category.key !== 'food')
-                  .map((category) => (
-                    <Pressable
-                      key={category.key}
-                      style={[
-                        styles.categoryChip,
-                        newTaskCategoryKey === category.key && styles.categoryChipActive,
-                      ]}
-                      onPress={() => setNewTaskCategoryKey(category.key)}
-                    >
-                      <Text
-                        style={[
-                          styles.categoryChipText,
-                          newTaskCategoryKey === category.key && styles.categoryChipTextActive,
-                        ]}
-                      >
-                        {category.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-              </View>
-
-              <Pressable
-                style={[
-                  styles.globalTaskButton,
-                  isNewTaskGlobal && styles.globalTaskButtonActive,
-                ]}
-                onPress={() => setIsNewTaskGlobal((current) => !current)}
-              >
-                <Text
-                  style={[
-                    styles.globalTaskButtonText,
-                    isNewTaskGlobal && styles.globalTaskButtonTextActive,
-                  ]}
-                >
-                  ★
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.addMetaRow}>
-              <TextInput
-                style={[styles.input, styles.metaInput]}
-                placeholder="кол-во"
-                placeholderTextColor="#6d6963"
-                value={newTaskExpectedCount}
-                onChangeText={setNewTaskExpectedCount}
-                keyboardType="numeric"
-              />
-
-              <TextInput
-                style={[styles.input, styles.metaInput]}
-                placeholder="мин"
-                placeholderTextColor="#6d6963"
-                value={newTaskExpectedTime}
-                onChangeText={setNewTaskExpectedTime}
-                keyboardType="numeric"
-              />
-
-              <Pressable style={styles.addButton} onPress={addTask}>
-                <Text style={styles.addButtonText}>+</Text>
-              </Pressable>
-            </View>
-          </>
-        )}
-      </View>
+      <AddTaskCard
+        categories={categories}
+        isAddTaskOpen={isAddTaskOpen}
+        setIsAddTaskOpen={setIsAddTaskOpen}
+        newTaskTitle={newTaskTitle}
+        setNewTaskTitle={setNewTaskTitle}
+        newTaskCategoryKey={newTaskCategoryKey}
+        setNewTaskCategoryKey={setNewTaskCategoryKey}
+        newTaskExpectedCount={newTaskExpectedCount}
+        setNewTaskExpectedCount={setNewTaskExpectedCount}
+        newTaskExpectedTime={newTaskExpectedTime}
+        setNewTaskExpectedTime={setNewTaskExpectedTime}
+        isNewTaskGlobal={isNewTaskGlobal}
+        setIsNewTaskGlobal={setIsNewTaskGlobal}
+        onAddTask={addTask}
+      />
 
       {activeCategoryKey === 'all' ? (
         <View style={styles.groupList}>
