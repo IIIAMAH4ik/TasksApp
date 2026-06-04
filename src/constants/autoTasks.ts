@@ -30,13 +30,6 @@ function createAutoTask(params: {
 export function createDefaultAutoTasks(): Task[] {
   return [
     createAutoTask({
-      id: 'auto-sport-steps',
-      title: 'Шаги',
-      categoryKey: 'sport',
-      expectedCount: 10000,
-    }),
-
-    createAutoTask({
       id: 'auto-prayer-fajr',
       title: 'Фаджр',
       categoryKey: 'prayer',
