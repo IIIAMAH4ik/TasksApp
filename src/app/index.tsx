@@ -14,7 +14,6 @@ import AddTaskCard from '@/components/tasks/AddTaskCard';
 import TaskCard from '@/components/tasks/TaskCard';
 import TaskList from '@/components/tasks/TaskList';
 import { defaultCategories } from '@/constants/categories';
-import { useAuth } from '@/context/AuthContext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
 import {
   getGlobalTasks,
@@ -30,7 +29,7 @@ import { addDays, formatDateTitle, getDayKey, isSameDay } from '@/utils/date';
 import { getDayProgress, getTaskIsDone } from '@/utils/progress';
 
 export default function IndexScreen() {
-  const { user, signOut } = useAuth();
+  const localUserId = 'local';
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCategoryKey, setActiveCategoryKey] = useState('all');
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -107,12 +106,8 @@ export default function IndexScreen() {
   }, [dailyData]);
 
   useEffect(() => {
-    if (!user) {
-      return;
-    }
-
     loadInitialData();
-  }, [user, selectedDate]);
+  }, [selectedDate]);
 
   const customCategoryColors = [
     '#7ea8d4',
@@ -134,9 +129,7 @@ export default function IndexScreen() {
   }
 
   async function loadInitialData() {
-    if (!user) {
-      return;
-    }
+    // Локальный режим: пользователь не нужен.
 
     try {
       setIsLoadingData(true);
@@ -144,8 +137,8 @@ export default function IndexScreen() {
 
       const selectedDayKey = getDayKey(selectedDate);
 
-      const loadedCategories = await getUserSettings(user.id);
-      const loadedDailyData = await getDailyData(user.id, selectedDayKey);
+      const loadedCategories = await getUserSettings(localUserId);
+      const loadedDailyData = await getDailyData(localUserId, selectedDayKey);
 
       setCategories(loadedCategories);
       setDailyData(loadedDailyData);
@@ -307,7 +300,7 @@ export default function IndexScreen() {
   }
 
   async function disableGlobalTask(taskId: string) {
-    if (!dailyData || !user) {
+    if (!dailyData) {
       return;
     }
 
@@ -320,13 +313,14 @@ export default function IndexScreen() {
     try {
       setErrorMessage('');
 
-      const currentGlobalTasks = await getGlobalTasks(user.id);
+      const currentGlobalTasks = await getGlobalTasks(localUserId);
 
       const nextGlobalTasks = currentGlobalTasks.filter(
         (task) => task.globalId !== taskToUpdate.globalId && task.id !== taskToUpdate.globalId
       );
 
-      await saveGlobalTasks(user.id, nextGlobalTasks);
+      
+      await saveGlobalTasks(localUserId, nextGlobalTasks);
 
       const nextTasks = dailyData.tasks.map((task) => {
         if (task.id !== taskId) {
@@ -349,7 +343,7 @@ export default function IndexScreen() {
   }
 
   async function addTask() {
-    if (!dailyData || !user) {
+    if (!dailyData) {
       return;
     }
 
@@ -403,8 +397,8 @@ export default function IndexScreen() {
       setErrorMessage('');
 
       if (isNewTaskGlobal) {
-        const currentGlobalTasks = await getGlobalTasks(user.id);
-        await saveGlobalTasks(user.id, [...currentGlobalTasks, nextTask]);
+        const currentGlobalTasks = await getGlobalTasks(localUserId);
+        await saveGlobalTasks(localUserId, [...currentGlobalTasks, nextTask]);
       }
 
       await updateTasks([...dailyData.tasks, nextTask]);
@@ -481,9 +475,6 @@ export default function IndexScreen() {
   }
 
   async function addCategory() {
-    if (!user) {
-      return;
-    }
 
     const name = newCategoryName.trim();
 
@@ -517,7 +508,7 @@ export default function IndexScreen() {
       setNewTaskCategoryKey(nextCategory.key);
       setActiveCategoryKey(nextCategory.key);
 
-      await saveUserSettings(user.id, nextCategories);
+      await saveUserSettings(localUserId, nextCategories);
     } catch (error) {
       console.log('add category error:', error);
       setErrorMessage('Ошибка сохранения темы.');
@@ -526,11 +517,7 @@ export default function IndexScreen() {
   }
 
   async function deleteCategory(categoryKey: string) {
-    if (!user) {
-      return;
-    }
-
-    const categoryToDelete = categories.find((category) => category.key === categoryKey);
+      const categoryToDelete = categories.find((category) => category.key === categoryKey);
 
     if (!categoryToDelete) {
       return;
@@ -564,7 +551,7 @@ export default function IndexScreen() {
         setNewTaskCategoryKey('work');
       }
 
-      await saveUserSettings(user.id, nextCategories);
+      await saveUserSettings(localUserId, nextCategories);
     } catch (error) {
       console.log('delete category error:', error);
       setErrorMessage('Ошибка удаления темы.');
@@ -599,10 +586,8 @@ export default function IndexScreen() {
   if (isSettingsOpen) {
     return (
       <SettingsScreen
-        userEmail={user?.email}
         progress={progress}
         onClose={() => setIsSettingsOpen(false)}
-        onSignOut={signOut}
       />
     );
   }

@@ -4,7 +4,6 @@ import ProgressCard from '@/components/tasks/ProgressCard';
 import { styles } from '@/styles/index.styles';
 
 type SettingsScreenProps = {
-  userEmail?: string;
   progress: {
     total: number;
     done: number;
@@ -12,14 +11,11 @@ type SettingsScreenProps = {
     percent: number;
   };
   onClose: () => void;
-  onSignOut: () => void;
 };
 
 export default function SettingsScreen({
-  userEmail,
   progress,
   onClose,
-  onSignOut,
 }: SettingsScreenProps) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -32,12 +28,6 @@ export default function SettingsScreen({
         <Pressable style={styles.settingsBackButton} onPress={onClose}>
           <Text style={styles.settingsBackText}>Назад</Text>
         </Pressable>
-      </View>
-
-      <View style={styles.settingsCard}>
-        <Text style={styles.settingsSectionTitle}>Аккаунт</Text>
-        <Text style={styles.accountLabel}>Текущий аккаунт</Text>
-        <Text style={styles.accountEmail}>{userEmail}</Text>
       </View>
 
       <View style={styles.settingsCard}>
@@ -64,10 +54,6 @@ export default function SettingsScreen({
           Смену темы подключим позже. Сейчас приложение остаётся в тёмном оформлении.
         </Text>
       </View>
-
-      <Pressable style={styles.signOutButton} onPress={onSignOut}>
-        <Text style={styles.signOutButtonText}>Выйти из аккаунта</Text>
-      </Pressable>
     </ScrollView>
   );
 }

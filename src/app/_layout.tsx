@@ -1,34 +1,56 @@
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import LoginScreen from '@/screens/LoginScreen';
+import OnboardingScreen from '@/screens/OnboardingScreen';
+import {
+  getLocalOnboardingCompleted,
+  saveLocalOnboardingCompleted,
+} from '@/services/localfileservice';
 import IndexScreen from './index';
 
-function AppContent() {
-  const { user, loading } = useAuth();
+export default function RootLayout() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    loadOnboardingState();
+  }, []);
+
+  async function loadOnboardingState() {
+    try {
+      const completed = await getLocalOnboardingCompleted();
+      setHasCompletedOnboarding(completed);
+    } catch (error) {
+      console.log('load onboarding state error:', error);
+      setHasCompletedOnboarding(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function completeOnboarding() {
+    try {
+      await saveLocalOnboardingCompleted(true);
+      setHasCompletedOnboarding(true);
+    } catch (error) {
+      console.log('save onboarding state error:', error);
+    }
+  }
+
+  if (isLoading) {
     return (
       <View style={styles.loadingScreen}>
         <ActivityIndicator />
-        <Text style={styles.loadingText}>Проверяю вход...</Text>
+        <Text style={styles.loadingText}>Загружаю планер...</Text>
       </View>
     );
   }
 
-  if (!user) {
-    return <LoginScreen />;
+  if (!hasCompletedOnboarding) {
+    return <OnboardingScreen onStart={completeOnboarding} />;
   }
 
   return <IndexScreen />;
-}
-
-export default function RootLayout() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
 }
 
 const styles = StyleSheet.create({
