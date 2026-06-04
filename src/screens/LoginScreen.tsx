@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
 import { useAuth } from '@/context/AuthContext';
@@ -60,6 +60,7 @@ export default function LoginScreen() {
         return;
     }
 
+    
      try {
       setIsLoading(true);
      setMessage('Создаю аккаунт...');
