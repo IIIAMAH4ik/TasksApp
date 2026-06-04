@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { AppThemeProvider } from '@/context/appthemecontext';
 import OnboardingScreen from '@/screens/OnboardingScreen';
 import {
   getLocalOnboardingCompleted,
@@ -46,13 +47,16 @@ export default function RootLayout() {
     );
   }
 
-  if (!hasCompletedOnboarding) {
-    return <OnboardingScreen onStart={completeOnboarding} />;
-  }
-
-  return <IndexScreen />;
+  return (
+    <AppThemeProvider>
+      {!hasCompletedOnboarding ? (
+        <OnboardingScreen onStart={completeOnboarding} />
+      ) : (
+        <IndexScreen />
+      )}
+    </AppThemeProvider>
+  );
 }
-
 const styles = StyleSheet.create({
   loadingScreen: {
     flex: 1,

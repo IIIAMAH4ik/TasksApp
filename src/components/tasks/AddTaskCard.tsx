@@ -1,5 +1,6 @@
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { useAppTheme } from '@/context/appthemecontext';
 import { styles } from '@/styles/index.styles';
 import { Category } from '@/types/category';
 
@@ -43,21 +44,45 @@ export default function AddTaskCard({
   setIsNewTaskGlobal,
   onAddTask,
 }: AddTaskCardProps) {
+  const { colors } = useAppTheme();
   return (
-    <View style={styles.addCard}>
+    <View
+      style={[
+        styles.addCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+      ]}
+    >
       <Pressable
         style={styles.addCardHandleWrap}
         onPress={() => setIsAddTaskOpen((current) => !current)}
       >
-        <View style={[styles.addCardHandle, isAddTaskOpen && styles.addCardHandleActive]} />
+        <View
+          style={[
+            styles.addCardHandle,
+            {
+              backgroundColor: colors.accent,
+              opacity: isAddTaskOpen ? 1 : 0.55,
+            },
+          ]}
+        />
       </Pressable>
 
       {isAddTaskOpen && (
         <>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.input,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             placeholder="Новая задача..."
-            placeholderTextColor="#6d6963"
+            placeholderTextColor={colors.textSoft}
             value={newTaskTitle}
             onChangeText={setNewTaskTitle}
           />
@@ -71,14 +96,25 @@ export default function AddTaskCard({
                     key={category.key}
                     style={[
                       styles.categoryChip,
-                      newTaskCategoryKey === category.key && styles.categoryChipActive,
+                      {
+                        backgroundColor:
+                          newTaskCategoryKey === category.key ? colors.accent : colors.cardSoft,
+                        borderColor:
+                          newTaskCategoryKey === category.key ? colors.accent : colors.border,
+                      },
                     ]}
                     onPress={() => setNewTaskCategoryKey(category.key)}
                   >
                     <Text
                       style={[
                         styles.categoryChipText,
-                        newTaskCategoryKey === category.key && styles.categoryChipTextActive,
+                        {
+                          color:
+                            newTaskCategoryKey === category.key
+                              ? colors.accentText
+                              : colors.textMuted,
+                          fontWeight: newTaskCategoryKey === category.key ? '700' : '400',
+                        },
                       ]}
                     >
                       {category.name}
@@ -90,14 +126,19 @@ export default function AddTaskCard({
             <Pressable
               style={[
                 styles.globalTaskButton,
-                isNewTaskGlobal && styles.globalTaskButtonActive,
+                {
+                  backgroundColor: isNewTaskGlobal ? colors.accent : colors.cardSoft,
+                  borderColor: isNewTaskGlobal ? colors.accent : colors.border,
+                },
               ]}
               onPress={() => setIsNewTaskGlobal((current) => !current)}
             >
               <Text
                 style={[
                   styles.globalTaskButtonText,
-                  isNewTaskGlobal && styles.globalTaskButtonTextActive,
+                  {
+                    color: isNewTaskGlobal ? colors.accentText : colors.textMuted,
+                  },
                 ]}
               >
                 ★
@@ -107,25 +148,44 @@ export default function AddTaskCard({
 
           <View style={styles.addMetaRow}>
             <TextInput
-              style={[styles.input, styles.metaInput]}
+              style={[
+                styles.input,
+                styles.metaInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="кол-во"
-              placeholderTextColor="#6d6963"
               value={newTaskExpectedCount}
               onChangeText={setNewTaskExpectedCount}
               keyboardType="numeric"
             />
 
             <TextInput
-              style={[styles.input, styles.metaInput]}
+              style={[
+                styles.input,
+                styles.metaInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="мин"
-              placeholderTextColor="#6d6963"
               value={newTaskExpectedTime}
               onChangeText={setNewTaskExpectedTime}
               keyboardType="numeric"
             />
 
-            <Pressable style={styles.addButton} onPress={onAddTask}>
-              <Text style={styles.addButtonText}>+</Text>
+            <Pressable
+              style={[styles.addButton, { backgroundColor: colors.accent }]}
+              onPress={onAddTask}
+            >
+              <Text style={[styles.addButtonText, { color: colors.accentText }]}>+</Text>
             </Pressable>
           </View>
         </>

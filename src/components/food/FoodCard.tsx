@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 
+import { useAppTheme } from '@/context/appthemecontext';
 import { styles } from '@/styles/index.styles';
 import { DailyData } from '@/types/dailyData';
 
@@ -49,6 +50,7 @@ export default function FoodCard({
   onAddFoodTask,
 }: FoodCardProps) {
   const [isFoodFormOpen, setIsFoodFormOpen] = useState(false);
+  const { colors } = useAppTheme();
 
   function handleAddFoodTask() {
     onAddFoodTask();
@@ -56,23 +58,39 @@ export default function FoodCard({
   }
 
   return (
-    <View style={styles.foodCard}>
-      <Text style={styles.foodTitle}>Еда / КБЖУ</Text>
+    <View
+      style={[
+        styles.foodCard,
+        {
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+        },
+      ]}
+    >
+      <Text style={[styles.foodTitle, { color: colors.accent }]}>Еда / КБЖУ</Text>
 
-      <View style={styles.foodSummary}>
-        <Text style={styles.foodSummaryText}>
+      <View
+        style={[
+          styles.foodSummary,
+          {
+            backgroundColor: colors.cardSoft,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Text style={[styles.foodSummaryText, { color: colors.textMuted }]}>
           Потреблено: {consumedNutrition.calories} / {dailyData?.meta.caloriesGoal ?? 0} ккал
         </Text>
 
-        <Text style={styles.foodSummaryText}>
+        <Text style={[styles.foodSummaryText, { color: colors.text }]}>
           Б: {consumedNutrition.protein} / {dailyData?.meta.proteinGoal ?? 0}
         </Text>
 
-        <Text style={styles.foodSummaryText}>
+        <Text style={[styles.foodSummaryText, { color: colors.text }]}>
           Ж: {consumedNutrition.fat} / {dailyData?.meta.fatGoal ?? 0}
         </Text>
 
-        <Text style={styles.foodSummaryText}>
+        <Text style={[styles.foodSummaryText, { color: colors.text }]}>
           У: {consumedNutrition.carbs} / {dailyData?.meta.carbsGoal ?? 0}
         </Text>
       </View>
@@ -81,59 +99,107 @@ export default function FoodCard({
         style={styles.foodHandleWrap}
         onPress={() => setIsFoodFormOpen((current) => !current)}
       >
-        <View style={[styles.foodHandle, isFoodFormOpen && styles.foodHandleActive]} />
+        <View
+          style={[
+            styles.foodHandle,
+            {
+              backgroundColor: colors.accent,
+              opacity: isFoodFormOpen ? 1 : 0.55,
+            },
+          ]}
+        />
       </Pressable>
 
       {isFoodFormOpen && (
         <>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.input,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
             placeholder="Название еды..."
-            placeholderTextColor="#6d6963"
+            placeholderTextColor={colors.textSoft}
             value={foodTitle}
             onChangeText={setFoodTitle}
           />
 
           <View style={styles.foodGrid}>
             <TextInput
-              style={styles.foodInput}
+              style={[
+                styles.foodInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="ккал"
-              placeholderTextColor="#6d6963"
               value={foodCalories}
               onChangeText={setFoodCalories}
               keyboardType="numeric"
             />
 
             <TextInput
-              style={styles.foodInput}
+              style={[
+                styles.foodInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="белки"
-              placeholderTextColor="#6d6963"
               value={foodProtein}
               onChangeText={setFoodProtein}
               keyboardType="numeric"
             />
 
             <TextInput
-              style={styles.foodInput}
+              style={[
+                styles.foodInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="жиры"
-              placeholderTextColor="#6d6963"
               value={foodFat}
               onChangeText={setFoodFat}
               keyboardType="numeric"
             />
 
             <TextInput
-              style={styles.foodInput}
+              style={[
+                styles.foodInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              placeholderTextColor={colors.textSoft}
               placeholder="углеводы"
-              placeholderTextColor="#6d6963"
               value={foodCarbs}
               onChangeText={setFoodCarbs}
               keyboardType="numeric"
             />
           </View>
 
-          <Pressable style={styles.foodAddButton} onPress={handleAddFoodTask}>
-            <Text style={styles.foodAddButtonText}>Добавить еду</Text>
+          <Pressable
+            style={[styles.foodAddButton, { backgroundColor: colors.accent }]}
+            onPress={handleAddFoodTask}
+          >
+            <Text style={[styles.foodAddButtonText, { color: colors.accentText }]}>
+              Добавить еду
+            </Text>
           </Pressable>
         </>
       )}

@@ -1,6 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 
+import { useAppTheme } from '@/context/appthemecontext';
+
 type ProgressRingProps = {
   progress: number;
   size?: number;
@@ -12,6 +14,8 @@ export default function ProgressRing({
   size = 92,
   strokeWidth = 10,
 }: ProgressRingProps) {
+  const { colors, themeMode } = useAppTheme();
+
   const clampedProgress = Math.max(0, Math.min(100, progress));
 
   const center = size / 2;
@@ -20,15 +24,28 @@ export default function ProgressRing({
   const strokeDashoffset =
     circumference - (clampedProgress / 100) * circumference;
 
+  const trackColor =
+    themeMode === 'light'
+      ? 'rgba(31,35,41,0.12)'
+      : 'rgba(255,255,255,0.08)';
+
   return (
-    <View style={styles.wrapper}>
+    <View
+      style={[
+        styles.wrapper,
+        {
+          width: size,
+          height: size,
+        },
+      ]}
+    >
       <Svg width={size} height={size}>
         <G rotation="-90" origin={`${center}, ${center}`}>
           <Circle
             cx={center}
             cy={center}
             r={radius}
-            stroke="rgba(255,255,255,0.08)"
+            stroke={trackColor}
             strokeWidth={strokeWidth}
             fill="none"
           />
@@ -37,7 +54,7 @@ export default function ProgressRing({
             cx={center}
             cy={center}
             r={radius}
-            stroke="#6dbf8e"
+            stroke={colors.success}
             strokeWidth={strokeWidth}
             fill="none"
             strokeLinecap="round"
@@ -52,8 +69,6 @@ export default function ProgressRing({
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: 92,
-    height: 92,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',

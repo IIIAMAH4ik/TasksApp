@@ -3,6 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { createDefaultAutoTasks } from '@/constants/autoTasks';
 import { defaultCategories } from '@/constants/categories';
 import { defaultDailyMeta } from '@/constants/dailyMeta';
+import { AppThemeMode } from '@/types/apptheme';
 import { Category } from '@/types/category';
 import { DailyData, DailyMeta } from '@/types/dailyData';
 import { Task } from '@/types/task';
@@ -16,6 +17,7 @@ const globalTasksFile = `${storageRoot}global-tasks.json`;
 type LocalSettings = {
   categories: Category[];
   hasCompletedOnboarding?: boolean;
+  themeMode?: AppThemeMode;
   updated_at: string;
 };
 
@@ -201,12 +203,12 @@ export async function saveLocalCategories(categories: Category[]) {
   const settings: LocalSettings = {
     categories,
     hasCompletedOnboarding: currentSettings?.hasCompletedOnboarding ?? false,
+    themeMode: currentSettings?.themeMode ?? 'dark',
     updated_at: new Date().toISOString(),
   };
 
   await writeJsonFile(settingsFile, settings);
 }
-
 export async function getLocalOnboardingCompleted(): Promise<boolean> {
   const settings = await readJsonFile<LocalSettings | null>(
     settingsFile,
@@ -246,4 +248,33 @@ export async function getLocalGlobalTasks(): Promise<Task[]> {
 
 export async function saveLocalGlobalTasks(globalTasks: Task[]) {
   await writeJsonFile(globalTasksFile, globalTasks);
+}
+
+export async function getLocalThemeMode(): Promise<AppThemeMode> {
+  const settings = await readJsonFile<LocalSettings | null>(
+    settingsFile,
+    null
+  );
+
+  if (settings?.themeMode === 'light' || settings?.themeMode === 'dark') {
+    return settings.themeMode;
+  }
+
+  return 'dark';
+}
+
+export async function saveLocalThemeMode(themeMode: AppThemeMode) {
+  const currentSettings = await readJsonFile<LocalSettings | null>(
+    settingsFile,
+    null
+  );
+
+  const nextSettings: LocalSettings = {
+    categories: currentSettings?.categories ?? defaultCategories,
+    hasCompletedOnboarding: currentSettings?.hasCompletedOnboarding ?? false,
+    themeMode,
+    updated_at: new Date().toISOString(),
+  };
+
+  await writeJsonFile(settingsFile, nextSettings);
 }

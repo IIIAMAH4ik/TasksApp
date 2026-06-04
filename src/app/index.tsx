@@ -14,6 +14,7 @@ import AddTaskCard from '@/components/tasks/AddTaskCard';
 import TaskCard from '@/components/tasks/TaskCard';
 import TaskList from '@/components/tasks/TaskList';
 import { defaultCategories } from '@/constants/categories';
+import { useAppTheme } from '@/context/appthemecontext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
 import {
   getGlobalTasks,
@@ -30,12 +31,13 @@ import { getDayProgress, getTaskIsDone } from '@/utils/progress';
 
 export default function IndexScreen() {
   const localUserId = 'local';
+  const { colors } = useAppTheme();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [activeCategoryKey, setActiveCategoryKey] = useState('all');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isCategoryPanelOpen, setIsCategoryPanelOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(true);
 
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskCategoryKey, setNewTaskCategoryKey] = useState('work');
@@ -593,35 +595,88 @@ export default function IndexScreen() {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView
+      style={[styles.screen, { backgroundColor: colors.screen }]}
+      contentContainerStyle={styles.content}
+    >
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>My Tasks</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>My Tasks</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             {dailyData?.day_key ?? getDayKey(selectedDate)}
           </Text>
         </View>
 
-        <Pressable style={styles.settingsButton} onPress={() => setIsSettingsOpen(true)}>
-          <Text style={styles.settingsButtonIcon}>⚙</Text>
-          <Text style={styles.settingsButtonText}>Настройки</Text>
+        <Pressable
+          style={[
+            styles.settingsButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={() => setIsSettingsOpen(true)}
+        >
+          <Text style={[styles.settingsButtonIcon, { color: colors.accent }]}>⚙</Text>
+          <Text style={[styles.settingsButtonText, { color: colors.textMuted }]}>
+            Настройки
+          </Text>
         </Pressable>
       </View>
 
       <View style={styles.dateNav}>
-        <Pressable style={styles.dateButton} onPress={() => changeDay(-1)}>
-          <Text style={styles.dateButtonText}>←</Text>
+        <Pressable
+          style={[
+            styles.dateButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={() => changeDay(-1)}
+        >
+          <Text style={[styles.dateButtonText, { color: colors.text }]}>←</Text>
         </Pressable>
 
         <Pressable
-          style={[styles.todayButton, isSameDay(selectedDate, new Date()) && styles.todayButtonActive]}
+          style={[
+            styles.todayButton,
+            {
+              backgroundColor: isSameDay(selectedDate, new Date())
+                ? colors.accent
+                : colors.card,
+              borderColor: isSameDay(selectedDate, new Date())
+                ? colors.accent
+                : colors.border,
+            },
+          ]}
           onPress={goToday}
         >
-          <Text style={styles.todayButtonText}>{formatDateTitle(selectedDate)}</Text>
+          <Text
+            style={[
+              styles.todayButtonText,
+              {
+                color: isSameDay(selectedDate, new Date())
+                  ? colors.accentText
+                  : colors.text,
+              },
+            ]}
+          >
+            {formatDateTitle(selectedDate)}
+          </Text>
         </Pressable>
 
-        <Pressable style={styles.dateButton} onPress={() => changeDay(1)}>
-          <Text style={styles.dateButtonText}>→</Text>
+        <Pressable
+          style={[
+            styles.dateButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={() => changeDay(1)}
+        >
+          <Text style={[styles.dateButtonText, { color: colors.text }]}>→</Text>
         </Pressable>
       </View>
 
@@ -635,14 +690,22 @@ export default function IndexScreen() {
           <Pressable
             style={[
               styles.filterChip,
-              activeCategoryKey === 'all' && styles.filterChipActive,
+              {
+                backgroundColor:
+                  activeCategoryKey === 'all' ? colors.accent : colors.card,
+                borderColor:
+                  activeCategoryKey === 'all' ? colors.accent : colors.border,
+              },
             ]}
             onPress={() => setActiveCategoryKey('all')}
           >
             <Text
               style={[
                 styles.filterChipText,
-                activeCategoryKey === 'all' && styles.filterChipTextActive,
+                {
+                  color:
+                    activeCategoryKey === 'all' ? colors.accentText : colors.textMuted,
+                },
               ]}
             >
               Все
@@ -654,14 +717,24 @@ export default function IndexScreen() {
               key={category.key}
               style={[
                 styles.filterChip,
-                activeCategoryKey === category.key && styles.filterChipActive,
+                {
+                  backgroundColor:
+                    activeCategoryKey === category.key ? colors.accent : colors.card,
+                  borderColor:
+                    activeCategoryKey === category.key ? colors.accent : colors.border,
+                },
               ]}
               onPress={() => setActiveCategoryKey(category.key)}
             >
               <Text
                 style={[
                   styles.filterChipText,
-                  activeCategoryKey === category.key && styles.filterChipTextActive,
+                  {
+                    color:
+                      activeCategoryKey === category.key
+                        ? colors.accentText
+                        : colors.textMuted,
+                  },
                 ]}
               >
                 {category.name}
@@ -671,20 +744,25 @@ export default function IndexScreen() {
         </ScrollView>
 
         <View style={styles.categoryScrollHint}>
-          <Text style={styles.categoryScrollHintText}>›</Text>
+          <Text style={[styles.categoryScrollHintText, { color: colors.textSoft }]}>›</Text>
         </View>
 
         <Pressable
           style={[
             styles.categoryPanelButton,
-            isCategoryPanelOpen && styles.categoryPanelButtonActive,
+            {
+              backgroundColor: isCategoryPanelOpen ? colors.accent : colors.card,
+              borderColor: isCategoryPanelOpen ? colors.accent : colors.border,
+            },
           ]}
           onPress={() => setIsCategoryPanelOpen((current) => !current)}
         >
           <Text
             style={[
               styles.categoryPanelButtonText,
-              isCategoryPanelOpen && styles.categoryPanelButtonTextActive,
+              {
+                color: isCategoryPanelOpen ? colors.accentText : colors.accent,
+              },
             ]}
           >
             {isCategoryPanelOpen ? '−' : '+'}
@@ -693,26 +771,56 @@ export default function IndexScreen() {
       </View>
 
       {isCategoryPanelOpen && (
-        <View style={styles.categoryPanel}>
-          <Text style={styles.settingsSectionTitle}>Темы</Text>
-
+        <View
+          style={[
+            styles.categoryPanel,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.settingsSectionTitle, { color: colors.textSoft }]}>
+            Темы
+          </Text>
           <View style={styles.categoryAddRow}>
             <TextInput
-              style={styles.categoryInput}
+              style={[
+                styles.categoryInput,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
               placeholder="Новая тема..."
-              placeholderTextColor="#6d6963"
+              placeholderTextColor={colors.textSoft}
               value={newCategoryName}
               onChangeText={setNewCategoryName}
             />
 
-            <Pressable style={styles.categoryAddButton} onPress={addCategory}>
-              <Text style={styles.categoryAddButtonText}>+</Text>
+            <Pressable
+              style={[styles.categoryAddButton, { backgroundColor: colors.accent }]}
+              onPress={addCategory}
+            >
+              <Text style={[styles.categoryAddButtonText, { color: colors.accentText }]}>
+                +
+              </Text>
             </Pressable>
           </View>
 
           <View style={styles.managerCategoryList}>
             {categories.map((category) => (
-              <View key={category.key} style={styles.managerCategoryChip}>
+              <View
+                key={category.key}
+                style={[
+                  styles.managerCategoryChip,
+                  {
+                    backgroundColor: colors.cardSoft,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
                 <View
                   style={[
                     styles.managerCategoryDot,
@@ -720,7 +828,9 @@ export default function IndexScreen() {
                   ]}
                 />
 
-                <Text style={styles.managerCategoryText}>{category.name}</Text>
+                <Text style={[styles.managerCategoryText, { color: colors.textMuted }]}>
+                  {category.name}
+                </Text>
 
                 {!category.isDefault && (
                   <Pressable
@@ -754,9 +864,13 @@ export default function IndexScreen() {
         />
       )}
 
-      {!!errorMessage && <Text style={styles.error}>{errorMessage}</Text>}
+      {!!errorMessage && (
+        <Text style={[styles.error, { color: colors.error }]}>
+          {errorMessage}
+        </Text>
+      )}
 
-      <Text style={styles.sectionTitle}>Задачи</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textSoft }]}>Задачи</Text>
 
       <AddTaskCard
         categories={categories}

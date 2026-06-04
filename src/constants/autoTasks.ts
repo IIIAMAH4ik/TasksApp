@@ -28,31 +28,5 @@ function createAutoTask(params: {
 }
 
 export function createDefaultAutoTasks(): Task[] {
-  return [
-    createAutoTask({
-      id: 'auto-prayer-fajr',
-      title: 'Фаджр',
-      categoryKey: 'prayer',
-    }),
-    createAutoTask({
-      id: 'auto-prayer-dhuhr',
-      title: 'Зухр',
-      categoryKey: 'prayer',
-    }),
-    createAutoTask({
-      id: 'auto-prayer-asr',
-      title: 'Аср',
-      categoryKey: 'prayer',
-    }),
-    createAutoTask({
-      id: 'auto-prayer-maghrib',
-      title: 'Магриб',
-      categoryKey: 'prayer',
-    }),
-    createAutoTask({
-      id: 'auto-prayer-isha',
-      title: 'Иша',
-      categoryKey: 'prayer',
-    }),
-  ];
+  return [];
 }
