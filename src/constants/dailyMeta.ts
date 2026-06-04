@@ -8,4 +8,6 @@ export const defaultDailyMeta: DailyMeta = {
 
   weight: undefined,
   weightGoal: undefined,
+
+  hiddenGlobalTaskIds: [],
 };

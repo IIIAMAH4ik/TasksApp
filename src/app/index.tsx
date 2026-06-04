@@ -13,7 +13,12 @@ import ProgressRing from '@/components/progressring';
 import { defaultCategories } from '@/constants/categories';
 import { useAuth } from '@/context/AuthContext';
 import { getDailyData, saveDailyData } from '@/services/dailydataservice';
-import { getUserSettings, saveUserSettings } from '@/services/settingsservice';
+import {
+  getGlobalTasks,
+  getUserSettings,
+  saveGlobalTasks,
+  saveUserSettings,
+} from '@/services/settingsservice';
 import { Category } from '@/types/category';
 import { DailyData } from '@/types/dailyData';
 import { Task } from '@/types/task';
@@ -35,6 +40,7 @@ export default function IndexScreen() {
   const [newTaskExpectedCount, setNewTaskExpectedCount] = useState('');
   const [newTaskExpectedTime, setNewTaskExpectedTime] = useState('');
   const [foodTitle, setFoodTitle] = useState('');
+  const [isNewTaskGlobal, setIsNewTaskGlobal] = useState(false);
   const [foodCalories, setFoodCalories] = useState('');
   const [foodProtein, setFoodProtein] = useState('');
   const [foodFat, setFoodFat] = useState('');
@@ -161,6 +167,10 @@ export default function IndexScreen() {
     return `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
+  function createGlobalTaskId() {
+    return `global-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
   function isAutoTask(task: Task) {
     return task.id.startsWith('auto-');
   }
@@ -250,7 +260,7 @@ export default function IndexScreen() {
     updateTasks(nextTasks);
   }
 
-  function deleteTask(taskId: string) {
+  async function deleteTask(taskId: string) {
     if (!dailyData) {
       return;
     }
@@ -268,11 +278,79 @@ export default function IndexScreen() {
 
     const nextTasks = dailyData.tasks.filter((task) => task.id !== taskId);
 
-    updateTasks(nextTasks);
+    const hiddenGlobalTaskIds = dailyData.meta.hiddenGlobalTaskIds ?? [];
+
+    const nextMeta = taskToDelete.globalId
+      ? {
+          ...dailyData.meta,
+          hiddenGlobalTaskIds: Array.from(
+            new Set([...hiddenGlobalTaskIds, taskToDelete.globalId])
+          ),
+        }
+      : dailyData.meta;
+
+    const nextDailyData: DailyData = {
+      ...dailyData,
+      tasks: nextTasks,
+      meta: nextMeta,
+      updated_at: new Date().toISOString(),
+    };
+
+    setDailyData(nextDailyData);
+
+    try {
+      setErrorMessage('');
+      await saveDailyData(nextDailyData);
+    } catch (error) {
+      console.log('delete task error:', error);
+      setErrorMessage('Ошибка удаления задачи.');
+    }
   }
 
-  function addTask() {
-    if (!dailyData) {
+  async function disableGlobalTask(taskId: string) {
+    if (!dailyData || !user) {
+      return;
+    }
+
+    const taskToUpdate = dailyData.tasks.find((task) => task.id === taskId);
+
+    if (!taskToUpdate || !taskToUpdate.globalId) {
+      return;
+    }
+
+    try {
+      setErrorMessage('');
+
+      const currentGlobalTasks = await getGlobalTasks(user.id);
+
+      const nextGlobalTasks = currentGlobalTasks.filter(
+        (task) => task.globalId !== taskToUpdate.globalId && task.id !== taskToUpdate.globalId
+      );
+
+      await saveGlobalTasks(user.id, nextGlobalTasks);
+
+      const nextTasks = dailyData.tasks.map((task) => {
+        if (task.id !== taskId) {
+          return task;
+        }
+
+        return {
+          ...task,
+          isGlobal: false,
+          globalId: undefined,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+
+      await updateTasks(nextTasks);
+    } catch (error) {
+      console.log('disable global task error:', error);
+      setErrorMessage('Ошибка отключения вечной задачи.');
+    }
+  }
+
+  async function addTask() {
+    if (!dailyData || !user) {
       return;
     }
 
@@ -301,8 +379,10 @@ export default function IndexScreen() {
 
     const now = new Date().toISOString();
 
+    const globalId = isNewTaskGlobal ? createGlobalTaskId() : undefined;
+
     const nextTask: Task = {
-      id: createTaskId(),
+      id: globalId ?? createTaskId(),
       title,
       categoryKey: newTaskCategoryKey,
       done: false,
@@ -313,17 +393,32 @@ export default function IndexScreen() {
       actualCount: expectedCount ? 0 : undefined,
       actualTime: expectedTime ? 0 : undefined,
 
+      isGlobal: isNewTaskGlobal,
+      globalId,
+
       createdAt: now,
       updatedAt: now,
     };
 
-    updateTasks([...dailyData.tasks, nextTask]);
+    try {
+      setErrorMessage('');
 
-    setNewTaskTitle('');
-    setNewTaskExpectedCount('');
-    setNewTaskExpectedTime('');
-    setErrorMessage('');
-    setIsAddTaskOpen(false);
+      if (isNewTaskGlobal) {
+        const currentGlobalTasks = await getGlobalTasks(user.id);
+        await saveGlobalTasks(user.id, [...currentGlobalTasks, nextTask]);
+      }
+
+      await updateTasks([...dailyData.tasks, nextTask]);
+
+      setNewTaskTitle('');
+      setNewTaskExpectedCount('');
+      setNewTaskExpectedTime('');
+      setIsNewTaskGlobal(false);
+      setIsAddTaskOpen(false);
+    } catch (error) {
+      console.log('add task error:', error);
+      setErrorMessage('Ошибка создания задачи.');
+    }
   }
 
   function addFoodTask() {
@@ -599,12 +694,23 @@ export default function IndexScreen() {
         </Pressable>
 
         {!isAutoTask(task) && (
-          <Pressable
-            style={styles.deleteButton}
-            onPress={() => deleteTask(task.id)}
-          >
-            <Text style={styles.deleteButtonText}>×</Text>
-          </Pressable>
+          <View style={styles.taskActions}>
+            {task.isGlobal && (
+              <Pressable
+                style={styles.taskActionButton}
+                onPress={() => disableGlobalTask(task.id)}
+              >
+                <Text style={styles.globalTaskActiveIcon}>★</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={styles.taskActionButton}
+              onPress={() => deleteTask(task.id)}
+            >
+              <Text style={styles.deleteButtonText}>×</Text>
+            </Pressable>
+          </View>
         )}
       </View>
     );
@@ -906,28 +1012,47 @@ export default function IndexScreen() {
               onChangeText={setNewTaskTitle}
             />
 
-            <View style={styles.categoryRow}>
-              {categories
-                .filter((category) => category.key !== 'food')
-                .map((category) => (
-                  <Pressable
-                    key={category.key}
-                    style={[
-                      styles.categoryChip,
-                      newTaskCategoryKey === category.key && styles.categoryChipActive,
-                    ]}
-                    onPress={() => setNewTaskCategoryKey(category.key)}
-                  >
-                    <Text
+            <View style={styles.categorySelectRow}>
+              <View style={styles.categoryRow}>
+                {categories
+                  .filter((category) => category.key !== 'food')
+                  .map((category) => (
+                    <Pressable
+                      key={category.key}
                       style={[
-                        styles.categoryChipText,
-                        newTaskCategoryKey === category.key && styles.categoryChipTextActive,
+                        styles.categoryChip,
+                        newTaskCategoryKey === category.key && styles.categoryChipActive,
                       ]}
+                      onPress={() => setNewTaskCategoryKey(category.key)}
                     >
-                      {category.name}
-                    </Text>
-                  </Pressable>
-                ))}
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          newTaskCategoryKey === category.key && styles.categoryChipTextActive,
+                        ]}
+                      >
+                        {category.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+              </View>
+
+              <Pressable
+                style={[
+                  styles.globalTaskButton,
+                  isNewTaskGlobal && styles.globalTaskButtonActive,
+                ]}
+                onPress={() => setIsNewTaskGlobal((current) => !current)}
+              >
+                <Text
+                  style={[
+                    styles.globalTaskButtonText,
+                    isNewTaskGlobal && styles.globalTaskButtonTextActive,
+                  ]}
+                >
+                  ★
+                </Text>
+              </Pressable>
             </View>
 
             <View style={styles.addMetaRow}>
@@ -1319,6 +1444,34 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
+  categorySelectRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginTop: 10,
+  },
+  globalTaskButton: {
+    width: 44,
+    height: 38,
+    borderRadius: 12,
+    borderColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.025)',
+  },
+  globalTaskButtonActive: {
+    backgroundColor: '#b8a98a',
+    borderColor: '#b8a98a',
+  },
+  globalTaskButtonText: {
+    color: '#aaa6a0',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  globalTaskButtonTextActive: {
+    color: '#0f0f11',
+  },
   managerTitle: {
     color: '#6d6963',
     fontSize: 12,
@@ -1593,10 +1746,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   categoryRow: {
+    flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 10,
   },
   categoryChip: {
     borderColor: 'rgba(255,255,255,0.12)',
@@ -1712,5 +1865,21 @@ const styles = StyleSheet.create({
     fontSize: 24,
     lineHeight: 26,
     fontWeight: '600',
+  },
+  taskActions: {
+    width: 46,
+    borderLeftColor: 'rgba(255,255,255,0.09)',
+    borderLeftWidth: 1,
+  },
+  taskActionButton: {
+    flex: 1,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  globalTaskActiveIcon: {
+    color: '#b8a98a',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });

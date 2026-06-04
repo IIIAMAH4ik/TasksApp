@@ -8,6 +8,8 @@ export type DailyMeta = {
 
   weight?: number;
   weightGoal?: number;
+
+  hiddenGlobalTaskIds?: string[];
 };
 
 export type DailyData = {

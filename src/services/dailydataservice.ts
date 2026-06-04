@@ -1,6 +1,7 @@
 import { createDefaultAutoTasks } from '@/constants/autoTasks';
 import { defaultDailyMeta } from '@/constants/dailyMeta';
 import { supabase } from '@/lib/supabase';
+import { getGlobalTasks } from '@/services/settingsservice';
 import { DailyData, DailyMeta } from '@/types/dailyData';
 import { Task } from '@/types/task';
 
@@ -20,6 +21,43 @@ function mergeAutoTasks(tasks: Task[]): Task[] {
   const missingAutoTasks = autoTasks.filter((task) => !existingIds.has(task.id));
 
   return [...missingAutoTasks, ...tasks];
+}
+
+function mergeGlobalTasks(
+  tasks: Task[],
+  globalTasks: Task[],
+  hiddenGlobalTaskIds: string[] = []
+): Task[] {
+  const existingGlobalIds = new Set(
+    tasks
+      .filter((task) => task.globalId)
+      .map((task) => task.globalId)
+  );
+
+  const hiddenIds = new Set(hiddenGlobalTaskIds);
+
+  const missingGlobalTasks = globalTasks
+    .filter((task) => {
+      const globalId = task.globalId ?? task.id;
+
+      if (hiddenIds.has(globalId)) {
+        return false;
+      }
+
+      return !existingGlobalIds.has(globalId);
+    })
+    .map((task) => ({
+      ...task,
+      id: task.globalId ?? task.id,
+      done: false,
+      actualCount: task.expectedCount ? 0 : undefined,
+      actualTime: task.expectedTime ? 0 : undefined,
+      isGlobal: true,
+      globalId: task.globalId ?? task.id,
+      updatedAt: new Date().toISOString(),
+    }));
+
+  return [...missingGlobalTasks, ...tasks];
 }
 
 function createEmptyDailyData(userId: string, dayKey: string): DailyData {
@@ -44,20 +82,41 @@ export async function getDailyData(userId: string, dayKey: string): Promise<Dail
     throw new Error(error.message);
   }
 
+  const globalTasks = await getGlobalTasks(userId);
+
   if (!data) {
     const emptyDay = createEmptyDailyData(userId, dayKey);
-    await saveDailyData(emptyDay);
-    return emptyDay;
+
+    const dayWithGlobalTasks: DailyData = {
+      ...emptyDay,
+      tasks: mergeGlobalTasks(
+        emptyDay.tasks,
+        globalTasks,
+        emptyDay.meta.hiddenGlobalTaskIds ?? []
+      ),
+    };
+
+    await saveDailyData(dayWithGlobalTasks);
+    return dayWithGlobalTasks;
   }
+
+  const normalizedMeta: DailyMeta = {
+    ...defaultDailyMeta,
+    ...(data.meta ?? {}),
+    hiddenGlobalTaskIds: Array.isArray(data.meta?.hiddenGlobalTaskIds)
+      ? data.meta.hiddenGlobalTaskIds
+      : [],
+  };
 
   const normalizedDay: DailyData = {
     user_id: data.user_id,
     day_key: data.day_key,
-    tasks: mergeAutoTasks(Array.isArray(data.tasks) ? data.tasks : []),
-    meta: {
-      ...defaultDailyMeta,
-      ...(data.meta ?? {}),
-    },
+    tasks: mergeGlobalTasks(
+      mergeAutoTasks(Array.isArray(data.tasks) ? data.tasks : []),
+      globalTasks,
+      normalizedMeta.hiddenGlobalTaskIds
+    ),
+    meta: normalizedMeta,
     updated_at: data.updated_at,
   };
 

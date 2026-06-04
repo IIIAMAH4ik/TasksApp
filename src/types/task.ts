@@ -22,6 +22,9 @@ export type Task = {
 
   nutrition?: Nutrition;
 
+  isGlobal?: boolean;
+  globalId?: string;
+
   createdAt: string;
   updatedAt: string;
 };
